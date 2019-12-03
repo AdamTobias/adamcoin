@@ -19,27 +19,29 @@ type body struct {
 
 type transaction struct {
 	sender string
-	receivers []receiver
+	receivers unspentCoins
 	amount int
 	signature string
 }
 
-type receiver struct {
-	name string
-	amount int
-}
+type unspentCoins map[string]int
 
-func ValidateTransaction(txn transaction) error {
+func ValidateTransaction(txn transaction, unspent unspentCoins) error {
 	// validate amount
 	totalOut := 0
-	for _, rec := range txn.receivers {
-		totalOut = totalOut + rec.amount
+	for _, amount := range txn.receivers {
+		totalOut = totalOut + amount 
 	}
 	if txn.amount != totalOut {
 		return errors.New("amount in does not equal amount out")
 	}
-	return nil
 	// validate sender has enough coins
+	holding, ok := unspent[txn.sender]
+	if !ok || holding < txn.amount {
+		return errors.New("sender does not have enough coins")
+	}
+	
+	return nil
 	// validate signature
 }
 	

@@ -1,6 +1,11 @@
 package block
 
-import "errors"
+import (
+	"errors"
+	"crypto"
+	"crypto/rsa"
+	"encoding/json"
+)
 
 type block struct {
 	header header
@@ -18,10 +23,10 @@ type body struct {
 }
 
 type transaction struct {
-	sender string
+	sender *rsa.PublicKey
 	receivers unspentCoins
 	amount int
-	signature string
+	signature []byte
 }
 
 type unspentCoins map[string]int
@@ -36,12 +41,28 @@ func ValidateTransaction(txn transaction, unspent unspentCoins) error {
 		return errors.New("amount in does not equal amount out")
 	}
 	// validate sender has enough coins
-	holding, ok := unspent[txn.sender]
+	senderName, _ := json.Marshal(txn.sender)
+	holding, ok := unspent[string(senderName)]
 	if !ok || holding < txn.amount {
 		return errors.New("sender does not have enough coins")
 	}
-	
-	return nil
 	// validate signature
+	
+	msgObj := transaction{
+		sender: txn.sender,
+		receivers: txn.receivers,
+		amount: txn.amount,
+	}
+	msg, _  := json.Marshal(msgObj)
+	newHash := crypto.SHA256
+	pssh := newHash.New()
+	pssh.Write(msg)
+	hashed := pssh.Sum(nil)
+
+	err := rsa.VerifyPKCS1v15(txn.sender, newHash, hashed, txn.signature); if err != nil {
+		return errors.New("invalid sig")
+	}
+	// txn is valid
+	return nil
 }
 	

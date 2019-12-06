@@ -10,6 +10,60 @@ import (
 	"testing"
 )
 
+func TestValidateBlock(t *testing.T) {
+	blk := block{
+		Header: header{
+			Nonce:   "6046848591118301370",
+			PrevBlk: "5678",
+			Hash:    []byte{},
+		},
+		Body: body{
+			Txns: []transaction{},
+		},
+	}
+	tests := []struct {
+		desc     string
+		badHash  bool
+		badNonce bool
+		err      error
+	}{
+		{
+			desc: "Happy case",
+		},
+		{
+			desc:    "bad hash",
+			badHash: true,
+			err:     errors.New("bad hash"),
+		},
+		{
+			desc:     "bad nonce",
+			badNonce: true,
+			err:      errors.New("bad nonce"),
+		},
+	}
+	for _, tt := range tests {
+		if tt.badNonce {
+			blk.Header.Nonce = "bad nonce"
+		}
+		newHash := crypto.SHA256
+		msg, _ := json.Marshal(blk)
+		pssh := newHash.New()
+		pssh.Write(msg)
+		hashed := pssh.Sum(nil)
+		blk.Header.Hash = hashed
+		if tt.badHash {
+			blk.Header.Hash = []byte("bad hash")
+		}
+
+		err := ValidateBlock(blk, unspentCoins{})
+		if tt.err != nil {
+			assert.Error(t, err)
+		} else {
+			assert.Nil(t, err)
+		}
+	}
+}
+
 func TestValidateTransaction(t *testing.T) {
 	pvKey, _ := rsa.GenerateKey(rand.Reader, 2048)
 	pubKey := &pvKey.PublicKey
@@ -25,38 +79,38 @@ func TestValidateTransaction(t *testing.T) {
 		{
 			desc: "Happy case",
 			txn: transaction{
-				sender: pubKey,
-				receivers: unspentCoins{
+				Sender: pubKey,
+				Receivers: unspentCoins{
 					"p1": 20,
 					"p2": 30,
 				},
-				amount: 50,
+				Amount: 50,
 			},
 			us:  unspentCoins{nameStr: 100},
 			err: nil,
 		},
 		{
-			desc: "amount in does not equal amount out",
+			desc: "Amount in does not equal Amount out",
 			txn: transaction{
-				sender: pubKey,
-				receivers: unspentCoins{
+				Sender: pubKey,
+				Receivers: unspentCoins{
 					"p1": 20,
 					"p2": 30,
 				},
-				amount: 60,
+				Amount: 60,
 			},
 			us:  unspentCoins{nameStr: 100},
-			err: errors.New("amount in does not equal amount out"),
+			err: errors.New("Amount in does not equal Amount out"),
 		},
 		{
-			desc: "sender doesn't have enough coins",
+			desc: "Sender doesn't have enough coins",
 			txn: transaction{
-				sender: pubKey,
-				receivers: unspentCoins{
+				Sender: pubKey,
+				Receivers: unspentCoins{
 					"p1": 20,
 					"p2": 30,
 				},
-				amount: 60,
+				Amount: 60,
 			},
 			us:  unspentCoins{nameStr: 10},
 			err: errors.New("not enough coins"),
@@ -64,12 +118,12 @@ func TestValidateTransaction(t *testing.T) {
 		{
 			desc: "invalid sig",
 			txn: transaction{
-				sender: pubKey,
-				receivers: unspentCoins{
+				Sender: pubKey,
+				Receivers: unspentCoins{
 					"p1": 20,
 					"p2": 30,
 				},
-				amount: 50,
+				Amount: 50,
 			},
 			us:         unspentCoins{nameStr: 100},
 			invalidSig: true,
@@ -90,7 +144,7 @@ func TestValidateTransaction(t *testing.T) {
 		if err != nil {
 			assert.Fail(t, "test faild with err", err)
 		}
-		tt.txn.signature = sig
+		tt.txn.Signature = sig
 		err = ValidateTransaction(tt.txn, tt.us)
 		if tt.err != nil {
 			assert.Error(t, err)

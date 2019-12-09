@@ -11,14 +11,15 @@ import (
 )
 
 func TestValidateBlock(t *testing.T) {
-	blk := block{
-		Header: header{
+	pb := Block{}
+	blk := Block{
+		Header: Header{
 			Nonce:   "6046848591118301370",
-			PrevBlk: "5678",
+			PrevBlk: &pb,
 			Hash:    []byte{},
 		},
 		Body: body{
-			Txns: []transaction{},
+			Txns: []Transaction{},
 		},
 	}
 	tests := []struct {
@@ -55,7 +56,7 @@ func TestValidateBlock(t *testing.T) {
 			blk.Header.Hash = []byte("bad hash")
 		}
 
-		err := ValidateBlock(blk, unspentCoins{})
+		err := ValidateBlock(blk, UnspentCoins{})
 		if tt.err != nil {
 			assert.Error(t, err)
 		} else {
@@ -71,61 +72,61 @@ func TestValidateTransaction(t *testing.T) {
 	nameStr := string(name)
 	tests := []struct {
 		desc       string
-		txn        transaction
-		us         unspentCoins
+		txn        Transaction
+		us         UnspentCoins
 		invalidSig bool
 		err        error
 	}{
 		{
 			desc: "Happy case",
-			txn: transaction{
+			txn: Transaction{
 				Sender: pubKey,
-				Receivers: unspentCoins{
+				Receivers: UnspentCoins{
 					"p1": 20,
 					"p2": 30,
 				},
 				Amount: 50,
 			},
-			us:  unspentCoins{nameStr: 100},
+			us:  UnspentCoins{nameStr: 100},
 			err: nil,
 		},
 		{
 			desc: "Amount in does not equal Amount out",
-			txn: transaction{
+			txn: Transaction{
 				Sender: pubKey,
-				Receivers: unspentCoins{
+				Receivers: UnspentCoins{
 					"p1": 20,
 					"p2": 30,
 				},
 				Amount: 60,
 			},
-			us:  unspentCoins{nameStr: 100},
+			us:  UnspentCoins{nameStr: 100},
 			err: errors.New("Amount in does not equal Amount out"),
 		},
 		{
 			desc: "Sender doesn't have enough coins",
-			txn: transaction{
+			txn: Transaction{
 				Sender: pubKey,
-				Receivers: unspentCoins{
+				Receivers: UnspentCoins{
 					"p1": 20,
 					"p2": 30,
 				},
 				Amount: 60,
 			},
-			us:  unspentCoins{nameStr: 10},
+			us:  UnspentCoins{nameStr: 10},
 			err: errors.New("not enough coins"),
 		},
 		{
 			desc: "invalid sig",
-			txn: transaction{
+			txn: Transaction{
 				Sender: pubKey,
-				Receivers: unspentCoins{
+				Receivers: UnspentCoins{
 					"p1": 20,
 					"p2": 30,
 				},
 				Amount: 50,
 			},
-			us:         unspentCoins{nameStr: 100},
+			us:         UnspentCoins{nameStr: 100},
 			invalidSig: true,
 			err:        errors.New("invalid sig"),
 		},

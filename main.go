@@ -1,20 +1,19 @@
 package main
 
 import (
-	"fmt"
 	"blockchain/server"
+	"fmt"
 )
 
-func main(){
+func main() {
 	fmt.Println("hello world")
 	s := server.Server{}
-	s.InitializeServer()
+	s.InitializeServer("1234")
 }
 
-
 type Node struct {
-	chain string
-	server string
+	chain            string
+	server           string
 	openTransactions []string
 }
 
@@ -31,7 +30,7 @@ func (n Node) VerifyBlock(b block) {
 func (n Node) CreateBlock() {
 	// mining function
 	// should always be running?
-	
+
 	// look at all openTransactions
 	// put a good number of them in a block
 	// mine away!
@@ -41,6 +40,6 @@ type block struct {
 	transactionList []transaction
 }
 
-type transaction struct {}
+type transaction struct{}
 
-type peer struct {}
+type peer struct{}

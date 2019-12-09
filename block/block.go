@@ -12,33 +12,33 @@ import (
 
 const target = "141bc330"
 
-type block struct {
-	Header header
+type Block struct {
+	Header Header
 	Body   body
 }
 
-type header struct {
+type Header struct {
 	Nonce   string
 	Hash    []byte
-	PrevBlk string
+	PrevBlk *Block
 }
 
 type body struct {
-	Txns []transaction
+	Txns []Transaction
 }
 
-type transaction struct {
+type Transaction struct {
 	Sender    *rsa.PublicKey
-	Receivers unspentCoins
+	Receivers UnspentCoins
 	Amount    int
 	Signature []byte
 }
 
-type unspentCoins map[string]int
+type UnspentCoins map[string]int
 
-func ValidateBlock(blk block, us unspentCoins) error {
+func ValidateBlock(blk Block, us UnspentCoins) error {
 	// validate hash
-	msgBlk := block{
+	msgBlk := Block{
 		Body:   blk.Body,
 		Header: blk.Header,
 	}
@@ -81,7 +81,7 @@ func ParseTarget(t string) (uint64, error) {
 	return res, nil
 }
 
-func ValidateTransaction(txn transaction, unspent unspentCoins) error {
+func ValidateTransaction(txn Transaction, unspent UnspentCoins) error {
 	err := validateAmount(txn)
 	if err != nil {
 		return err
@@ -99,7 +99,7 @@ func ValidateTransaction(txn transaction, unspent unspentCoins) error {
 	return nil
 }
 
-func validateAmount(txn transaction) error {
+func validateAmount(txn Transaction) error {
 	// validate amount
 	totalOut := 0
 	for _, amount := range txn.Receivers {
@@ -111,7 +111,7 @@ func validateAmount(txn transaction) error {
 	return nil
 }
 
-func validateHoldings(txn transaction, unspent unspentCoins) error {
+func validateHoldings(txn Transaction, unspent UnspentCoins) error {
 	// validate sender has enough coins
 	senderName, _ := json.Marshal(txn.Sender)
 	holding, ok := unspent[string(senderName)]
@@ -121,9 +121,9 @@ func validateHoldings(txn transaction, unspent unspentCoins) error {
 	return nil
 }
 
-func validateSig(txn transaction) error {
+func validateSig(txn Transaction) error {
 	// validate signature
-	msgObj := transaction{
+	msgObj := Transaction{
 		Sender:    txn.Sender,
 		Receivers: txn.Receivers,
 		Amount:    txn.Amount,

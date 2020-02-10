@@ -6,6 +6,7 @@ import (
 	"crypto/rsa"
 	"encoding/json"
 	"errors"
+	"fmt"
 	"github.com/stretchr/testify/assert"
 	"testing"
 )
@@ -14,11 +15,11 @@ func TestValidateBlock(t *testing.T) {
 	pb := Block{}
 	blk := Block{
 		Header: Header{
-			Nonce:   "6046848591118301370",
+			Nonce:   "8439543257134209797",
 			PrevBlk: &pb,
 			Hash:    []byte{},
 		},
-		Body: body{
+		Body: Body{
 			Txns: []Transaction{},
 		},
 	}
@@ -43,25 +44,27 @@ func TestValidateBlock(t *testing.T) {
 		},
 	}
 	for _, tt := range tests {
-		if tt.badNonce {
-			blk.Header.Nonce = "bad nonce"
-		}
-		newHash := crypto.SHA256
-		msg, _ := json.Marshal(blk)
-		pssh := newHash.New()
-		pssh.Write(msg)
-		hashed := pssh.Sum(nil)
-		blk.Header.Hash = hashed
-		if tt.badHash {
-			blk.Header.Hash = []byte("bad hash")
-		}
+		t.Run(tt.desc, func(t *testing.T) {
+			if tt.badNonce {
+				blk.Header.Nonce = "bad nonce"
+			}
+			newHash := crypto.SHA256
+			msg, _ := json.Marshal(blk)
+			pssh := newHash.New()
+			pssh.Write(msg)
+			hashed := pssh.Sum(nil)
+			blk.Header.Hash = hashed
+			if tt.badHash {
+				blk.Header.Hash = []byte("bad hash")
+			}
 
-		err := ValidateBlock(blk, UnspentCoins{})
-		if tt.err != nil {
-			assert.Error(t, err)
-		} else {
-			assert.Nil(t, err)
-		}
+			err := ValidateBlock(blk, UnspentCoins{})
+			if tt.err != nil {
+				assert.Error(t, err)
+			} else {
+				assert.Nil(t, err)
+			}
+		})
 	}
 }
 
@@ -70,6 +73,7 @@ func TestValidateTransaction(t *testing.T) {
 	pubKey := &pvKey.PublicKey
 	name, _ := json.Marshal(pubKey)
 	nameStr := string(name)
+	fmt.Println(nameStr)
 	tests := []struct {
 		desc       string
 		txn        Transaction

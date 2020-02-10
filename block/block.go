@@ -14,7 +14,7 @@ const target = "141bc330"
 
 type Block struct {
 	Header Header
-	Body   body
+	Body   Body
 }
 
 type Header struct {
@@ -23,7 +23,7 @@ type Header struct {
 	PrevBlk *Block
 }
 
-type body struct {
+type Body struct {
 	Txns []Transaction
 }
 

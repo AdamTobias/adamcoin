@@ -6,6 +6,7 @@ import (
 	"blockchain/controller/client"
 	"blockchain/controller/miner"
 	"encoding/json"
+	"fmt"
 )
 
 type Controller struct {
@@ -14,6 +15,7 @@ type Controller struct {
 	cli        client.Client
 	mnr        miner.Miner
 	looseTxns  []block.Transaction
+	kill       chan int
 }
 
 func NewController(peer string) Controller {
@@ -21,6 +23,7 @@ func NewController(peer string) Controller {
 	cli.AddPeer(peer)
 	// get chain from peer
 	// init chain
+	//return Controller{cli: cli, kill: make(chan int)}
 	return Controller{cli: cli}
 }
 
@@ -55,4 +58,28 @@ func (c *Controller) AddBlock(blk block.Block) error {
 	// update mining
 	// post block to peers
 	return nil
+}
+func (c *Controller) Mine(b block.Block) {
+	if c.kill != nil {
+		c.kill <- 1
+	}
+	c.kill = make(chan int)
+	go func() {
+		killMiner := make(chan int)
+		miner := c.mnr.Mine(b, killMiner)
+		for {
+			select {
+			case blk := <-miner:
+				// add block
+				// post block
+				fmt.Println("New block finished mining!  Block is", blk)
+				c.kill = nil
+				return
+			case <-c.kill:
+				fmt.Println("killing the controller miner routine")
+				killMiner <- 1
+				return
+			}
+		}
+	}()
 }
